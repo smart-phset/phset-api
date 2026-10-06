@@ -1,0 +1,313 @@
+plugins {
+	id 'java'
+	id 'jacoco'
+
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.smart.phset'
+version = '0.0.1-SNAPSHOT'
+description = 'SmartPhset IoT and AI Backend'
+
+
+// ============================================================================
+// JAVA
+// ============================================================================
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+
+// ============================================================================
+// REPOSITORIES
+// ============================================================================
+
+repositories {
+	mavenCentral()
+}
+
+
+// ============================================================================
+// DEPENDENCIES
+// ============================================================================
+
+dependencies {
+
+	// ========================================================================
+	// REST API / SPRING MVC
+	// ========================================================================
+
+	// REST controllers, JSON APIs, HTTP clients, Spring MVC.
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+	// Jakarta Bean Validation:
+	// @Valid, @NotBlank, @Email, @Size, @Min, @Max, etc.
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
+	// ========================================================================
+	// SPRING SECURITY
+	// ========================================================================
+
+	// Authentication, authorization, SecurityFilterChain,
+	// PasswordEncoder, @PreAuthorize, etc.
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+
+	// ========================================================================
+	// JWT
+	// ========================================================================
+
+	// JWT API used by application code.
+	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+
+	// JWT implementation only required at runtime.
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+
+	// Jackson JSON integration for JWT claims.
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+
+	// ========================================================================
+	// DATABASE / SPRING DATA JPA
+	// ========================================================================
+
+	// JPA, Hibernate, repositories and transaction support.
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	// PostgreSQL JDBC driver.
+	// Spring Boot manages the compatible version.
+	runtimeOnly 'org.postgresql:postgresql'
+
+
+	// ========================================================================
+	// FLYWAY DATABASE MIGRATIONS
+	// ========================================================================
+
+	// Spring Boot integration with Flyway.
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+
+	// PostgreSQL-specific Flyway support.
+	implementation 'org.flywaydb:flyway-database-postgresql'
+
+
+	// ========================================================================
+	// MQTT / ESP32 COMMUNICATION
+	// ========================================================================
+
+	// Core Spring Integration infrastructure.
+	implementation 'org.springframework.boot:spring-boot-starter-integration'
+
+	// MQTT inbound/outbound adapters.
+	implementation 'org.springframework.integration:spring-integration-mqtt'
+
+	// Spring Integration treats the Paho MQTT v3 client as optional,
+	// therefore it must be explicitly included.
+	implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+
+
+	// ========================================================================
+	// REAL-TIME FRONTEND COMMUNICATION
+	// ========================================================================
+
+	// Keep this available for WebSocket support.
+	//
+	// SmartPhset can use REST for commands and SSE for most server -> browser
+	// realtime updates, but WebSocket support is useful if bidirectional
+	// realtime communication is added later.
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+
+	// ========================================================================
+	// MONITORING / HEALTH
+	// ========================================================================
+
+	// /actuator/health, metrics and application health indicators.
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+
+	// ========================================================================
+	// OPENAPI / SWAGGER UI
+	// ========================================================================
+
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
+
+
+	// ========================================================================
+	// LOMBOK
+	// ========================================================================
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+
+
+	// ========================================================================
+	// MAPSTRUCT
+	// ========================================================================
+
+	// Compile-time Entity <-> DTO mapping.
+	implementation 'org.mapstruct:mapstruct:1.6.3'
+
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+	// Required for reliable Lombok + MapStruct interoperability.
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+
+	// ========================================================================
+	// SPRING CONFIGURATION PROCESSOR
+	// ========================================================================
+
+	// Generates metadata for @ConfigurationProperties.
+	//
+	// Useful for:
+	// JwtProperties
+	// AiProperties
+	// MqttProperties
+	// CorsProperties
+	// StorageProperties
+	// CameraProperties
+	// SecurityProperties
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+
+	// ========================================================================
+	// GENERAL TESTING
+	// ========================================================================
+
+	// JUnit Jupiter, AssertJ, Mockito, Spring Boot Test, MockMvc utilities, etc.
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+
+	// ========================================================================
+	// SPRING SECURITY TESTING
+	// ========================================================================
+
+	// SecurityMockMvcRequestPostProcessors,
+	// @WithMockUser and security test utilities.
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+
+
+	// ========================================================================
+	// SPRING MVC TESTING
+	// ========================================================================
+
+	// MVC-focused testing support.
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+
+
+	// ========================================================================
+	// SPRING INTEGRATION / MQTT TESTING
+	// ========================================================================
+
+	testImplementation 'org.springframework.integration:spring-integration-test'
+
+
+	// ========================================================================
+	// TESTCONTAINERS
+	// ========================================================================
+
+	// Spring Boot Testcontainers integration:
+	// @ServiceConnection, container lifecycle support, etc.
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+
+	// JUnit Jupiter support for Testcontainers.
+	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+
+	// Real PostgreSQL container for integration tests.
+	testImplementation 'org.testcontainers:testcontainers-postgresql'
+
+
+	// ========================================================================
+	// JUNIT PLATFORM
+	// ========================================================================
+
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+
+// ============================================================================
+// JAVA COMPILER
+// ============================================================================
+
+tasks.withType(JavaCompile).configureEach {
+
+	options.encoding = 'UTF-8'
+
+	options.compilerArgs += [
+
+			// Generate MapStruct implementations as Spring beans.
+			'-Amapstruct.defaultComponentModel=spring',
+
+			// Prefer constructor injection in generated mappers.
+			'-Amapstruct.defaultInjectionStrategy=constructor',
+
+			// Fail compilation when a target DTO/entity field is forgotten.
+			//
+			// This helps prevent accidentally breaking the contract between
+			// phset-api and phset-client.
+			'-Amapstruct.unmappedTargetPolicy=ERROR'
+	]
+}
+
+
+// ============================================================================
+// TESTING
+// ============================================================================
+
+tasks.named('test') {
+
+	useJUnitPlatform()
+
+	// Generate a JaCoCo report after running the tests.
+	finalizedBy tasks.named('jacocoTestReport')
+}
+
+
+// ============================================================================
+// JACOCO CODE COVERAGE
+// ============================================================================
+
+tasks.named('jacocoTestReport') {
+
+	dependsOn tasks.named('test')
+
+	reports {
+
+		// Useful later for CI / Sonar / coverage tools.
+		xml.required = true
+
+		// Human-readable report:
+		// build/reports/jacoco/test/html/index.html
+		html.required = true
+
+		csv.required = false
+	}
+}
+
+
+// ============================================================================
+// BUILD SETTINGS
+// ============================================================================
+
+tasks.withType(Test).configureEach {
+
+	// Makes test output easier to debug.
+	testLogging {
+
+		events 'passed', 'skipped', 'failed'
+
+		exceptionFormat = 'full'
+
+		showExceptions = true
+		showCauses = true
+		showStackTraces = true
+	}
+}
