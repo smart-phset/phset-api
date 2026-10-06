@@ -41,7 +41,7 @@ dependencies {
 	// REST API / SPRING MVC
 	// ========================================================================
 
-	// REST controllers, JSON APIs, HTTP clients, Spring MVC.
+	// REST controllers, JSON APIs, HTTP clients and Spring MVC.
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 
 	// Jakarta Bean Validation:
@@ -65,10 +65,10 @@ dependencies {
 	// JWT API used by application code.
 	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
 
-	// JWT implementation only required at runtime.
+	// JWT implementation required at runtime.
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
 
-	// Jackson JSON integration for JWT claims.
+	// Jackson integration for JWT claims.
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
 
@@ -80,15 +80,15 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
 	// PostgreSQL JDBC driver.
-	// Spring Boot manages the compatible version.
+	// Version is managed by Spring Boot.
 	runtimeOnly 'org.postgresql:postgresql'
 
 
 	// ========================================================================
-	// FLYWAY DATABASE MIGRATIONS
+	// FLYWAY DATABASE MIGRATION
 	// ========================================================================
 
-	// Spring Boot integration with Flyway.
+	// Spring Boot Flyway integration.
 	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 
 	// PostgreSQL-specific Flyway support.
@@ -105,8 +105,7 @@ dependencies {
 	// MQTT inbound/outbound adapters.
 	implementation 'org.springframework.integration:spring-integration-mqtt'
 
-	// Spring Integration treats the Paho MQTT v3 client as optional,
-	// therefore it must be explicitly included.
+	// Paho MQTT v3 client.
 	implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
 
 
@@ -114,11 +113,9 @@ dependencies {
 	// REAL-TIME FRONTEND COMMUNICATION
 	// ========================================================================
 
-	// Keep this available for WebSocket support.
-	//
-	// SmartPhset can use REST for commands and SSE for most server -> browser
-	// realtime updates, but WebSocket support is useful if bidirectional
-	// realtime communication is added later.
+	// WebSocket support.
+	// We may use SSE for most server -> browser events,
+	// but keeping WebSocket support available is useful.
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
 
@@ -155,9 +152,10 @@ dependencies {
 	// Compile-time Entity <-> DTO mapping.
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 
+	// Generates mapper implementations.
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
-	// Required for reliable Lombok + MapStruct interoperability.
+	// Required for Lombok + MapStruct interoperability.
 	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 
 
@@ -167,7 +165,7 @@ dependencies {
 
 	// Generates metadata for @ConfigurationProperties.
 	//
-	// Useful for:
+	// Useful later for:
 	// JwtProperties
 	// AiProperties
 	// MqttProperties
@@ -182,7 +180,7 @@ dependencies {
 	// GENERAL TESTING
 	// ========================================================================
 
-	// JUnit Jupiter, AssertJ, Mockito, Spring Boot Test, MockMvc utilities, etc.
+	// JUnit Jupiter, AssertJ, Mockito, Spring Boot Test, etc.
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
 
@@ -190,8 +188,7 @@ dependencies {
 	// SPRING SECURITY TESTING
 	// ========================================================================
 
-	// SecurityMockMvcRequestPostProcessors,
-	// @WithMockUser and security test utilities.
+	// @WithMockUser and Spring Security test utilities.
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 
 
@@ -199,7 +196,7 @@ dependencies {
 	// SPRING MVC TESTING
 	// ========================================================================
 
-	// MVC-focused testing support.
+	// MVC / MockMvc focused testing.
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 
 
@@ -214,14 +211,13 @@ dependencies {
 	// TESTCONTAINERS
 	// ========================================================================
 
-	// Spring Boot Testcontainers integration:
-	// @ServiceConnection, container lifecycle support, etc.
+	// Spring Boot Testcontainers integration.
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 
 	// JUnit Jupiter support for Testcontainers.
 	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
-	// Real PostgreSQL container for integration tests.
+	// PostgreSQL Testcontainer.
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
 
 
@@ -237,22 +233,35 @@ dependencies {
 // JAVA COMPILER
 // ============================================================================
 
+// Apply general Java compiler configuration to both
+// production and test compilation.
 tasks.withType(JavaCompile).configureEach {
-
 	options.encoding = 'UTF-8'
+}
+
+
+// ============================================================================
+// MAPSTRUCT COMPILER CONFIGURATION
+// ============================================================================
+
+// Apply MapStruct processor options ONLY to main application compilation.
+//
+// This prevents compileTestJava from receiving MapStruct-specific options
+// when no MapStruct processor is running in the test source set.
+tasks.named('compileJava') {
 
 	options.compilerArgs += [
 
-			// Generate MapStruct implementations as Spring beans.
+			// Generated MapStruct implementations become Spring beans.
 			'-Amapstruct.defaultComponentModel=spring',
 
-			// Prefer constructor injection in generated mappers.
+			// Use constructor injection when generated mappers
+			// depend on other mappers.
 			'-Amapstruct.defaultInjectionStrategy=constructor',
 
-			// Fail compilation when a target DTO/entity field is forgotten.
+			// Fail compilation if a target property is not mapped.
 			//
-			// This helps prevent accidentally breaking the contract between
-			// phset-api and phset-client.
+			// This helps prevent DTO/API contract mistakes.
 			'-Amapstruct.unmappedTargetPolicy=ERROR'
 	]
 }
@@ -266,7 +275,7 @@ tasks.named('test') {
 
 	useJUnitPlatform()
 
-	// Generate a JaCoCo report after running the tests.
+	// Generate JaCoCo report after tests finish.
 	finalizedBy tasks.named('jacocoTestReport')
 }
 
@@ -281,10 +290,10 @@ tasks.named('jacocoTestReport') {
 
 	reports {
 
-		// Useful later for CI / Sonar / coverage tools.
+		// Useful for CI and code-quality tools.
 		xml.required = true
 
-		// Human-readable report:
+		// Human-readable coverage report:
 		// build/reports/jacoco/test/html/index.html
 		html.required = true
 
@@ -294,12 +303,11 @@ tasks.named('jacocoTestReport') {
 
 
 // ============================================================================
-// BUILD SETTINGS
+// TEST LOGGING
 // ============================================================================
 
 tasks.withType(Test).configureEach {
 
-	// Makes test output easier to debug.
 	testLogging {
 
 		events 'passed', 'skipped', 'failed'
