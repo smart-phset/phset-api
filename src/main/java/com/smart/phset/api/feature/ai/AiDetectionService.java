@@ -52,8 +52,12 @@ public class AiDetectionService {
             box.setY2(b.xyxy().get(3));
             s.getBoxes().add(box);
         }
-        scans.saveAndFlush(s);
-        return new Saved(response(s), true);
+        // Assigned UUIDs can make Spring Data merge: refresh the returned managed
+        // instance, not the original object. Flush alone leaves nanosecond Instants
+        // in memory while PostgreSQL stores microseconds (potentially rounded).
+        var persisted = scans.saveAndFlush(s);
+        em.refresh(persisted);
+        return new Saved(response(persisted), true);
     }
 
     private void validate(AiDetectionRequest r) {

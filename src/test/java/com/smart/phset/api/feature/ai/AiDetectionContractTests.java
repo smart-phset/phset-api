@@ -34,6 +34,26 @@ class AiDetectionContractTests {
     }
 
     @Test
+    void actualPythonPublisherFixtureMatchesRequestDto() throws Exception {
+        String json;
+        try (var input = getClass().getResourceAsStream("/ai-detection.json")) {
+            assertThat(input).isNotNull();
+            json = new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        var request = mapper().readValue(json, AiDetectionRequest.class);
+        assertThat(request.cameraId()).isEqualTo("esp32-cam");
+        assertThat(request.maxContaminatedConf()).isEqualTo(0.799999999);
+        assertThat(request.severity()).isEqualTo("AMBER");
+        assertThat(request.capturedAt()).isEqualTo(java.time.Instant.parse("2026-10-08T10:00:00.123456Z"));
+        assertThat(request.boxes()).hasSize(2);
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            assertThat(factory.getValidator().validate(request)).isEmpty();
+        }
+        assertThat(mapper().readTree(mapper().writeValueAsString(request)))
+                .isEqualTo(mapper().readTree(json));
+    }
+
+    @Test
     void malformedNumbersAreNotCoerced() {
         var mapper = mapper();
         var valid = AiDetectionIntegrationTests.payload(UUID.randomUUID(), "2026-10-06T11:25:00Z");
