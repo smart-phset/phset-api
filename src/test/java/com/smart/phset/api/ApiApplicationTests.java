@@ -8,7 +8,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @Testcontainers
-@SpringBootTest
+@SpringBootTest(properties="app.mqtt.enabled=false")
 class ApiApplicationTests {
 
 	@Container

@@ -104,3 +104,9 @@ PGPASSWORD="$DB_PASSWORD" psql "${DB_URL#jdbc:}" -U "$DB_USERNAME" \
 PGPASSWORD="$DB_PASSWORD" psql "${DB_URL#jdbc:}" -U "$DB_USERNAME" \
   -c 'SELECT scan_id, label, confidence, x1, y1, x2, y2 FROM ai_detection_boxes LIMIT 20;'
 ```
+
+## Regular ESP32 / MQTT integration
+
+See [Phase 8 IoT integration](docs/iot-integration.md) for the new telemetry/state/command
+contract, V4 current-state storage, private IoT REST key, tests and hardware checklist.
+Software/runtime and physical hardware acceptance are tracked separately.

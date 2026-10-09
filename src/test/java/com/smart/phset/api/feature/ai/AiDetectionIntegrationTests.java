@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Testcontainers
-@SpringBootTest(properties="app.ai.ingest-key=test-ingest-key")
+@SpringBootTest(properties={"app.ai.ingest-key=test-ingest-key","app.mqtt.enabled=false"})
 @AutoConfigureMockMvc
 class AiDetectionIntegrationTests {
     @Container @ServiceConnection

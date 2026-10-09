@@ -56,6 +56,10 @@ management:
 app:
 
   mqtt:
+    enabled: ${MQTT_ENABLED:true}
+    client-id: ${MQTT_CLIENT_ID:smartphset-api}
+    devices: ${MQTT_DEVICES:grow-room-1}
+    api-key: ${IOT_API_KEY:}
     broker-url: ${MQTT_BROKER_URL:tcp://localhost:1883}
     username: ${MQTT_USERNAME:}
     password: ${MQTT_PASSWORD:}

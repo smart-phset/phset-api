@@ -1,7 +1,9 @@
 # Phase 7 — AI / Spring / PostgreSQL integration
 
 Status: COMPLETE — implementation and real runtime acceptance passed.
-Remote delivery pending commit/push; historical blockers below are superseded.
+Delivery reconciled at Phase8 start: ae9963c38efec13ad71fbcd89de53f94c66e8bda
+pushed externally; recorded origin/main matches. AI checkpoint c2b8b0091d9c256c43cc51211c5ac1ad29923086
+also delivered. Phase8 state is in iot-integration-work-log.md; historical blockers below are superseded.
 Research/inspection date: 2026-10-08.
 
 ## Git and user changes
