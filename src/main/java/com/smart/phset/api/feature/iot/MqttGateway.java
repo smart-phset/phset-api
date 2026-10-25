@@ -75,13 +75,21 @@ public class MqttGateway implements MqttCallbackExtended {
     public void deliveryComplete(IMqttDeliveryToken token) { }
     public Map<String,Object> command(String device,String actuator,boolean on) {
         if (stopped || !ready || !client.isConnected()) throw new BrokerUnavailableException();
-        var command=Map.<String,Object>of("command_id",UUID.randomUUID().toString(),"on",on,
-                "expires_at",Instant.now().plusSeconds(10).getEpochSecond());
+        String code=switch(actuator) {
+            case "pump" -> "P";
+            case "fan" -> "F";
+            case "light" -> "L";
+            default -> throw new IllegalArgumentException("Unknown actuator");
+        } + (on ? "1" : "0");
+        String id=UUID.randomUUID().toString();
+        long expires=Instant.now().plusSeconds(10).getEpochSecond();
+        var command=Map.<String,Object>of("command_id",id,"cmd",code,"expires_at",expires);
         try {
             // No retained commands, offline buffer or retries of actuation requests.
-            client.publish(IotProperties.topic(device,"commands/"+actuator),
+            client.publish(IotProperties.topic(device,"commands"),
                     mapper.writeValueAsString(command).getBytes(StandardCharsets.UTF_8),0,false);
-            return command;
+            // Preserve the public REST receipt independently of the MQTT payload.
+            return Map.of("command_id",id,"on",on,"expires_at",expires);
         } catch(MqttException error) {throw new BrokerUnavailableException();}
     }
     @PreDestroy void close() {

@@ -700,3 +700,48 @@ or Phase9 work performed for this checkpoint. Local diff checks passed.
 
 NEXT: preserve these completed software/DHT11 results; physical soil/actuator
 acceptance resumes only when hardware is available. Full Phase8 stays INCOMPLETE.
+
+## Explicit command codes / single MQTT topic — 2026-10-24
+
+User authorized internal protocol change only; no commit/push. Initial api/main
+f66e05d and firmware/main bbf860d clean. Frontend edb5152 feature branch and AI
+c2b8b00 had existing work preserved. Inspected logs, publisher/controller/DTO,
+firmware callback/policy, tests and verifier scripts before editing.
+
+Old MQTT: smartphset/devices/{device}/commands/{actuator}, JSON command_id/on/
+expires_at. New MQTT: smartphset/devices/{device}/commands, JSON cmd/command_id/
+expires_at. Exact codes P1/P0, F1/F0, L1/L0. Spring retains the REST request boolean
+and receipt command_id/on/expires_at; authenticated endpoints and HTTP202 semantics
+unchanged. QoS0, retain=false, availability checks, expiry generation (+10s),
+reconnect and no request retries/offline queue unchanged. No state/telemetry or
+AI changes. Both backend and firmware must be deployed together.
+
+Updated gateway tests cover all six mappings, exact payload/receipt fields,
+UUID/expiry, non-retention and invalid actuator rejection. Existing availability,
+reconnect, REST authentication, ingestion and OpenAPI tests retained. Updated two
+manual synthetic-device verifier scripts for new wire payload; not executed
+against live services. Python syntax checks passed.
+
+Validation: focused Gradle test, full test and build all attempted. Home-cache
+attempt failed read-only lock; direct installed Gradle9.7.1 with writable /tmp
+homes blocked BEFORE tasks: no usable wildcard IP (sandbox). No Gradle pass.
+Supplemental javac25/JUnit harness compiles changed gateway and focused tests with
+cached dependencies; five IoT/MQTT suites, 13 tests passed. Initial harness compile
+missed the IotIntegrationTests fixture dependency; added that source. Initial
+successful run selected cached Boot4.1.0; rerun with one latest cached version per
+module to use Boot4.1.1: 13/13 passed again, zero failures/skips. This harness is not a full Gradle/database/broker build.
+Firmware host tests and ESP32 compile passed; details in sibling firmware log.
+
+No real MQTT commands, firmware upload, relay test, secret edits, commit or push.
+NEW PROTOCOL PHYSICAL ACCEPTANCE PENDING. Prior relay verification retained;
+actual water pump/load, physical fan/light, soil sensor/calibration/telemetry
+remain unverified. Run normal-terminal Gradle checks before final acceptance.
+
+
+## Checkpoint verification — 2026-10-25
+
+User ran the current files in a normal terminal and reports PASS for focused
+IoT/MQTT Gradle tests, the full Gradle test suite, and Gradle build. This supersedes
+the sandbox execution limitation above; Codex's own Gradle retry still cannot
+initialize networking in this sandbox. git diff --check passes. Private .env
+remains ignored and excluded. New commit/push authorized; no history rewrite.

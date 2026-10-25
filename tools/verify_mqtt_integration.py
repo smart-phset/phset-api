@@ -54,7 +54,7 @@ def main():
             if time.monotonic() >= deadline:
                 raise
             time.sleep(0.2)
-    with subprocess.Popen(['mosquitto_sub', *common, '-t', prefix+'/commands/fan',
+    with subprocess.Popen(['mosquitto_sub', *common, '-t', prefix+'/commands',
                            '-q', '0', '-C', '1', '-W', '10'], stdout=subprocess.PIPE,
                           stderr=subprocess.DEVNULL, text=True) as subscriber:
         try:
@@ -64,7 +64,7 @@ def main():
             output, _ = subscriber.communicate(timeout=12)
             assert subscriber.returncode == 0
             observed = json.loads(output)
-            assert observed == accepted and observed['expires_at'] >= time.time()-1
+            assert observed == {'cmd': 'F0', 'command_id': accepted['command_id'], 'expires_at': accepted['expires_at']} and observed['expires_at'] >= time.time()-1
         finally:
             if subscriber.poll() is None:
                 subscriber.kill()

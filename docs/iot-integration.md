@@ -34,15 +34,13 @@ routes remain unchanged. This permits normal-terminal machine tests without
 inventing a JWT login flow for this phase. MQTT device identity is an allowlist,
 not cryptographic identity; existing anonymous broker is development-only.
 
-## MQTT contract (new; no previous implementation existed)
+## MQTT contract
 
 | Topic | Producer | Payload | Retained / QoS |
 |---|---|---|---|
 | `smartphset/devices/{deviceId}/telemetry` | ESP32 | sensor JSON below | no / 0 firmware, backend subscription 1 |
 | `smartphset/devices/{deviceId}/state` | ESP32 | reported outputs JSON | no / 0 firmware, backend subscription 1 |
-| `smartphset/devices/{deviceId}/commands/fan` | backend | explicit command JSON | no / 0 |
-| `smartphset/devices/{deviceId}/commands/light` | backend | explicit command JSON | no / 0 |
-| `smartphset/devices/{deviceId}/commands/pump` | backend | explicit command JSON | no / 0 |
+| `smartphset/devices/{deviceId}/commands` | backend | explicit command code JSON | no / 0 |
 
 ```json
 {"device_id":"grow-room-1","temperature_c":25.8,"humidity_percent":87.0,"soil_moisture_percent":68.0,"captured_at":"2026-10-08T12:00:00.123456Z"}
@@ -53,8 +51,16 @@ not cryptographic identity; existing anonymous broker is development-only.
 ```
 
 ```json
-{"command_id":"generated-uuid","on":false,"expires_at":1791460810}
+{"cmd":"P0","command_id":"generated-uuid","expires_at":1791460810}
 ```
+
+Allowed codes are exactly P1/P0 (pump ON/OFF), F1/F0 (fan ON/OFF), L1/L0
+(light ON/OFF). Spring's REST body remains `{"on":true}` / `{"on":false}` and
+its HTTP202 receipt remains `command_id`, `on`, `expires_at`. HTTP202 means
+accepted for MQTT transmission, never physical acknowledgement. Both Spring and
+firmware must be updated together; old actuator-suffixed topics are no longer used.
+State and telemetry topics/payloads are unchanged. Floating GPIO34 is not valid soil
+telemetry; no real soil sensor is installed.
 
 Command `expires_at` is **integer Unix epoch seconds**, generated 10 seconds ahead.
 Device requires synchronized time, rejects expired/implausibly future commands,

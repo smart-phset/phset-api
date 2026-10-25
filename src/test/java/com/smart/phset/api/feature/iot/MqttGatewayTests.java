@@ -44,10 +44,43 @@ class MqttGatewayTests {
             listener.getValue().onSuccess(null);
             var result=gateway.command("grow-room-1","pump",false);
             assertThat(result).containsEntry("on",false).containsKeys("command_id","expires_at");
-            verify(client).publish(eq("smartphset/devices/grow-room-1/commands/pump"),any(byte[].class),eq(0),eq(false));
+            verify(client).publish(eq("smartphset/devices/grow-room-1/commands"),any(byte[].class),eq(0),eq(false));
             gateway.connectionLost(null);
             assertThatThrownBy(() -> gateway.command("grow-room-1","pump",true))
                     .isInstanceOf(MqttGateway.BrokerUnavailableException.class);
+        } finally {gateway.close();}
+    }
+    @Test void allExplicitCodesPreserveRestReceiptAndSafetyMetadata() throws Exception {
+        var client=mock(IMqttAsyncClient.class);
+        var mapper=new JsonMapper();
+        var gateway=new MqttGateway(client,mock(IotIngestionService.class),mapper,"","",true);
+        try {
+            when(client.isConnected()).thenReturn(true);
+            gateway.connectComplete(false,"");
+            var listener=ArgumentCaptor.forClass(IMqttActionListener.class);
+            verify(client).subscribe(any(String[].class),any(int[].class),isNull(),listener.capture());
+            listener.getValue().onSuccess(null);
+            String[] actuators={"pump","fan","light"};
+            String[] prefixes={"P","F","L"};
+            for(int i=0;i<actuators.length;i++) for(boolean on:new boolean[]{true,false}) {
+                clearInvocations(client);
+                long before=java.time.Instant.now().getEpochSecond();
+                var receipt=gateway.command("grow-room-1",actuators[i],on);
+                var bytes=ArgumentCaptor.forClass(byte[].class);
+                verify(client).publish(eq("smartphset/devices/grow-room-1/commands"),bytes.capture(),eq(0),eq(false));
+                var payload=mapper.readTree(bytes.getValue());
+                assertThat(payload.size()).isEqualTo(3);
+                assertThat(payload.get("cmd").asText()).isEqualTo(prefixes[i]+(on?"1":"0"));
+                assertThat(payload.get("command_id").asText()).isEqualTo(receipt.get("command_id"));
+                assertThat(java.util.UUID.fromString(payload.get("command_id").asText())).isNotNull();
+                assertThat(payload.get("expires_at").asLong()).isEqualTo(receipt.get("expires_at"))
+                        .isBetween(before+10,java.time.Instant.now().getEpochSecond()+10);
+                assertThat(receipt).containsOnlyKeys("command_id","on","expires_at").containsEntry("on",on);
+            }
+            clearInvocations(client);
+            assertThatThrownBy(() -> gateway.command("grow-room-1","unknown",true))
+                    .isInstanceOf(IllegalArgumentException.class);
+            verify(client,never()).publish(anyString(),any(byte[].class),anyInt(),anyBoolean());
         } finally {gateway.close();}
     }
     @Test void malformedMessageCannotEscapeCallback() {

@@ -46,7 +46,7 @@ def main():
 
     def subscriber(seconds):
         return subprocess.Popen(['mosquitto_sub', '-h', 'localhost', '-p', '1883',
-                                 '-t', topic + 'commands/fan', '-q', '0', '-C', '1',
+                                 '-t', topic + 'commands', '-q', '0', '-C', '1',
                                  '-W', str(seconds)], stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, text=True)
 
@@ -66,7 +66,7 @@ def main():
             status, accepted = request('/actuators/fan', {'on': False})
             require(status == 202, 'OFF request was not accepted')
             output, _ = finish(proc, 12)
-            require(proc.returncode == 0 and json.loads(output) == accepted,
+            require(proc.returncode == 0 and json.loads(output) == {'cmd': 'F0', 'command_id': accepted['command_id'], 'expires_at': accepted['expires_at']},
                     'Live subscriber did not observe the exact new OFF command')
         finally:
             if proc.poll() is None:
