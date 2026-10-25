@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/smartphset}
     username: ${DB_USERNAME:smartphset}
-    password: ${DB_PASSWORD:smartphset_dev_password}
+    password: ${DB_PASSWORD}
 
     hikari:
       maximum-pool-size: 10
