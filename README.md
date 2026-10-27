@@ -250,6 +250,12 @@ place credentials in source files or pass secrets as Docker build arguments.
 | `SPRING_PROFILES_ACTIVE` | `render` (already the Docker image default; retain it) |
 | `PORT` | Render supplies this; Spring binds `0.0.0.0:${PORT}` and falls back to 9090 locally |
 
+Do not copy a local `SERVER_PORT=9090` setting into Render. `SERVER_PORT` directly
+sets `server.port` and takes precedence over the YAML `${PORT:9090}` expression.
+The deployment test supplies an isolated Render-style `PORT` environment source;
+port configuration tests cover the fallback and override with and without the
+`render` profile, independently of shell/JVM port settings.
+
 Use the exact Neon host/database from its connection dialog. Convert its URL to
 JDBC form and keep username/password in their separate fields. Preserve TLS
 parameters; `sslmode=require` is supported, and `sslmode=verify-full` additionally
