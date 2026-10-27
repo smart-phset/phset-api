@@ -36,7 +36,8 @@ spring:
 
 
 server:
-  port: 9090
+  port: ${PORT:9090}
+  address: 0.0.0.0
 
 
 management:
@@ -46,11 +47,11 @@ management:
       exposure:
         include:
           - health
-          - info
 
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: never
+      show-components: never
 
 
 app:

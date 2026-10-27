@@ -1,0 +1,26 @@
+# Allow only build inputs into the context; private local files stay outside it.
+**
+!Dockerfile
+!.dockerignore
+!gradlew
+!settings.gradle
+!build.gradle
+!gradle/
+!gradle/wrapper/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!src/
+!src/main/
+!src/main/**
+# Defense in depth even if private files are placed under src/main.
+**/.env
+**/.env.*
+**/config.h
+**/*.pem
+**/*.key
+**/*.p12
+**/*.jks
+**/.gradle/**
+**/build/**
+**/.idea/**
+**/.vscode/**

@@ -17,11 +17,11 @@ Flyway applies `V3__create_ai_detection_tables.sql`: `ai_scans` stores metadata,
 `ai_detection_boxes` stores the associated boxes with cascading deletion.
 Application code generates UUIDs. V1 and V2 remain unchanged.
 
-## Optional ingest key
+## Required ingest key
 
-If `AI_INGEST_KEY` is unset or blank, POST accepts local requests without a key.
-When set, POST requires the exact value in `X-SmartPhset-AI-Key`; an absent or
-incorrect key returns HTTP 401. GET endpoints are public for this phase.
+If `AI_INGEST_KEY` is unset or blank, POST is disabled with HTTP 503.
+With a configured key, POST requires the exact value in `X-SmartPhset-AI-Key`;
+an absent or incorrect key returns HTTP 401. GET endpoints remain public.
 
 Set a private value in your shell or ignored `.env` (never commit real secrets):
 

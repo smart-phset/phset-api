@@ -8,6 +8,18 @@ import static org.assertj.core.api.Assertions.*;
 import org.mockito.ArgumentCaptor;
 
 class MqttGatewayTests {
+    @Test void disabledGatewayNeverConnectsOrPublishes() throws Exception {
+        var client=mock(IMqttAsyncClient.class);
+        var gateway=new MqttGateway(client,mock(IotIngestionService.class),new JsonMapper(),"","",false);
+        try {
+            gateway.start();
+            gateway.tryConnect();
+            assertThatThrownBy(() -> gateway.command("grow-room-1","fan",true))
+                    .isInstanceOf(MqttGateway.BrokerUnavailableException.class);
+            verify(client,never()).connect(any(),isNull(),any());
+            verify(client,never()).publish(anyString(),any(byte[].class),anyInt(),anyBoolean());
+        } finally {gateway.close();}
+    }
     @Test void initialFailureRetriesAndReconnectResubscribes() throws Exception {
         var client=mock(IMqttAsyncClient.class);
         var ingestion=mock(IotIngestionService.class);

@@ -20,9 +20,9 @@ class AiDetectionLocalIntegrationTests {
     @Container @ServiceConnection
     static final PostgreSQLContainer postgres=new PostgreSQLContainer("postgres:18");
     @Autowired MockMvc mvc;
-    @Test void unsetKeyAllowsLocalIngest() throws Exception {
+    @Test void unsetKeyDisablesIngest() throws Exception {
         mvc.perform(post("/api/ai/detections").contentType(MediaType.APPLICATION_JSON)
             .content(AiDetectionIntegrationTests.payload(UUID.randomUUID(),"2026-10-06T11:25:00Z")))
-            .andExpect(status().isCreated());
+            .andExpect(status().isServiceUnavailable());
     }
 }

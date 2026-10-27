@@ -77,8 +77,8 @@ All local values belong in ignored `.env`; only placeholders/defaults belong in 
 
 `IOT_API_KEY` in Spring **must match** `SMARTPHSET_IOT_API_KEY` in Next.js.
 `AI_INGEST_KEY` in Spring **must match** `SMARTPHSET_AI_INGEST_KEY` in Python.
-A blank IoT key disables IoT REST (503). A blank AI key allows unauthenticated
-local ingestion; set a key for team development. Next.js team login is configured
+A blank IoT key disables IoT REST (503). A blank AI key disables ingestion (503);
+missing or incorrect supplied keys return 401 when a key is configured. Next.js team login is configured
 separately in the client repository.
 
 ### Generate development keys
@@ -211,6 +211,167 @@ and [AI contract](docs/ai-detection-contract.md) for payloads and optional integ
 Mosquitto currently permits anonymous LAN access and the Compose ports are
 published on the host. Use a trusted development network; these settings are not
 an Internet deployment configuration.
+
+## Render Free + Neon PostgreSQL deployment
+
+Use the repository-root `Dockerfile` with Render's Docker runtime. Its Java 25
+JDK stage runs the pinned Gradle wrapper's `bootJar` task, without Testcontainers.
+The Java 25 JRE stage contains the executable JAR and runs as UID/GID 10001.
+An allowlist in `.dockerignore` excludes `.env*`, local caches, build output,
+Git metadata, IDE files, tests and documentation from the build context. Never
+place credentials in source files or pass secrets as Docker build arguments.
+
+### Neon and Render setup
+
+1. Create a Neon database and role in a nearby region. For the first deployment,
+   use its **direct (unpooled) endpoint** so startup Flyway migrations run through
+   a normal PostgreSQL session. The role needs permission to create/alter the
+   application's tables. Keep the existing PostgreSQL driver and migrations;
+   do not disable Flyway or change Hibernate from schema validation.
+2. In Render choose **New → Web Service**, connect the existing
+   `smart-phset/phset-api` repository, select `main`, Docker runtime, and Free
+   instance. Use the repository root as build context and `./Dockerfile` as the
+   Dockerfile path. Keep the Docker command unset so the image entrypoint runs.
+3. Add the following environment variables in Render's private Environment UI.
+   Do not upload `.env` to Git, bake it into the image, or paste values into logs.
+4. Set the health check path to **`/actuator/health`**. Deploy after local
+   validation. Inspect startup for completed Flyway migrations and the Started
+   application message. A database connection/migration failure must block
+   startup rather than report a healthy service.
+
+| Render variable | Value / purpose |
+|---|---|
+| `DB_URL` | `jdbc:postgresql://NEON_HOST/NEON_DATABASE?sslmode=require` (no embedded credentials) |
+| `DB_USERNAME` | Private Neon role name |
+| `DB_PASSWORD` | Private Neon role password |
+| `AI_INGEST_KEY` | Required separate random secret; match Python `SMARTPHSET_AI_INGEST_KEY` |
+| `IOT_API_KEY` | Required separate random secret; match frontend `SMARTPHSET_IOT_API_KEY` |
+| `MQTT_ENABLED` | **`false`** for the first cloud deployment |
+| `SPRING_PROFILES_ACTIVE` | `render` (already the Docker image default; retain it) |
+| `PORT` | Render supplies this; Spring binds `0.0.0.0:${PORT}` and falls back to 9090 locally |
+
+Use the exact Neon host/database from its connection dialog. Convert its URL to
+JDBC form and keep username/password in their separate fields. Preserve TLS
+parameters; `sslmode=require` is supported, and `sslmode=verify-full` additionally
+validates hostname/certificate when using the appropriate trusted CA. `POSTGRES_*`
+variables are only needed for local Compose, not the hosted Spring process.
+
+MQTT implementation remains present. Disabled MQTT does not attempt broker
+connections; actuator commands return 503, while persisted state reads and AI
+routes remain available according to their existing key policies. A cloud
+container cannot reach Mosquitto on your laptop's `localhost` or private LAN IP.
+Before re-enabling MQTT, provide a reachable authenticated broker (prefer TLS),
+its credentials and a unique client ID. Never expose the anonymous local Compose
+broker on the Internet. The existing local Compose workflow is unchanged.
+
+### Public API security boundary
+
+`/actuator/health` is anonymous and exposes status only, even to authenticated
+users. It includes database health, so database failure returns an unhealthy
+status; it does not include health components, database addresses or credentials.
+All other actuator URLs are denied. Swagger/OpenAPI are disabled in the `render`
+profile and remain available in normal local development.
+
+AI POST ingestion now fails closed with 503 when `AI_INGEST_KEY` is blank; with a
+configured key it requires `X-SmartPhset-AI-Key` (401 for missing/wrong keys).
+IoT reads and commands continue to require `X-SmartPhset-IoT-Key`; a blank
+configured key disables them. These are server-to-server secrets, never browser
+public variables. CSRF exemptions remain limited to the existing keyed machine
+POST endpoints.
+
+**Remaining limitation:** AI detection GET/history endpoints are intentionally
+public. Camera IDs are not authorization, and results may contain grow-room
+metadata. JWT service/filter and user login are still stubs; `JWT_SECRET` does
+not enable authentication. This deployment is suitable only if those detection
+reads may be public. Private detection access requires an implemented read
+authorization scheme and coordinated client changes before public deployment.
+Unmatched application routes remain protected. No new login bypass is added.
+
+### Memory, startup and free-tier behavior
+
+The Docker image starts with `-Xms64m -Xmx224m`, Serial GC, a 32 MiB direct-buffer
+cap and a 48 MiB reserved code cache, with JVM exit on out-of-memory. The `render`
+profile uses at most two Hikari connections (zero idle minimum), 20 request
+threads (two spare), 100 connections and a queue of 20. Local `bootRun` retains
+its existing pool/thread/JVM defaults. `DB_POOL_MAX_SIZE` can override the cloud
+pool; increasing it also increases resource use. Do not enable lazy startup to
+hide database or migration failures.
+
+These are conservative starting settings, **not a measured guarantee of fitting
+512 MiB**. Heap is only part of process memory: metaspace, native allocations,
+thread stacks and the JRE also consume RAM. Measure startup, warmed requests,
+concurrent ingestion/history queries and idle recovery under a 512 MiB limit
+before relying on this service. If changing `JAVA_TOOL_OPTIONS`, retain sensible
+heap/native headroom; the JVM prints this option string, so never put secrets in
+it. Investigate OOM/restart events rather than merely raising the heap.
+
+Free web services spin down after inactivity and can take time to wake. Neon
+compute can also need to wake. Clients need appropriate timeouts/retry behavior;
+this combination is not an always-on MQTT/controller service. Health checks do
+not prove physical devices are reachable or operating.
+
+### Local validation on a Docker-capable host
+
+With JDK 25 selected, run from this repository:
+
+```bash
+./gradlew test
+./gradlew bootJar
+docker build --pull -t smartphset-api:render-check .
+git diff --check
+```
+
+For an isolated smoke test, use a disposable local database rather than migrating
+a production Neon database. The generated values below are test-only and stay in
+the shell/container environment. Choose unused container/network names:
+
+```bash
+export DB_PASSWORD="$(openssl rand -hex 24)"
+export AI_INGEST_KEY="$(openssl rand -hex 32)"
+export IOT_API_KEY="$(openssl rand -hex 32)"
+docker network create smartphset-render-check
+docker run -d --name smartphset-render-db --network smartphset-render-check \
+  -e POSTGRES_DB=deployment_test -e POSTGRES_USER=deployment_test \
+  -e POSTGRES_PASSWORD="$DB_PASSWORD" postgres:18
+# Wait until the database reports ready before starting the application:
+docker exec smartphset-render-db pg_isready -U deployment_test -d deployment_test
+# Repeat the readiness check if it has not succeeded yet.
+docker run -d --name smartphset-render-api --network smartphset-render-check \
+  --memory=512m --memory-swap=512m -p 127.0.0.1:10000:10000 \
+  -e PORT=10000 -e MQTT_ENABLED=false \
+  -e DB_URL=jdbc:postgresql://smartphset-render-db:5432/deployment_test \
+  -e DB_USERNAME=deployment_test -e DB_PASSWORD -e AI_INGEST_KEY -e IOT_API_KEY \
+  smartphset-api:render-check
+curl --fail --retry 30 --retry-delay 3 --retry-all-errors http://127.0.0.1:10000/actuator/health
+# Expect exactly status UP, with no components or details.
+curl -i http://127.0.0.1:10000/actuator/env
+curl -i http://127.0.0.1:10000/v3/api-docs
+# Expect 403 for private actuator endpoints and 404 for disabled OpenAPI.
+docker stats --no-stream smartphset-render-api
+docker inspect --format '{{.State.OOMKilled}} {{.RestartCount}}' smartphset-render-api
+```
+
+Repeat memory measurements during realistic workload and cold starts. Check that
+startup succeeds without Mosquitto and that Flyway created its history and V1–V4
+tables. The deployment integration tests verify health disclosure, denied
+actuator endpoints, disabled OpenAPI and Render property bindings; existing
+integration tests verify key enforcement and database contracts. Full tests
+require Docker/Testcontainers. The smoke test does not measure Neon TLS/network
+behavior; verify that separately with private Render variables and the Neon URL.
+
+Clean up only these disposable test containers after inspection:
+
+```bash
+docker rm -f smartphset-render-api smartphset-render-db
+docker network rm smartphset-render-check
+unset DB_PASSWORD AI_INGEST_KEY IOT_API_KEY
+```
+
+References: [Render Docker builds](https://render.com/docs/docker),
+[port binding](https://render.com/docs/web-services#port-binding),
+[health checks](https://render.com/docs/health-checks),
+[free service limits](https://render.com/docs/free),
+[Neon Java/JDBC](https://neon.com/docs/guides/java).
 
 ## Git workflow
 

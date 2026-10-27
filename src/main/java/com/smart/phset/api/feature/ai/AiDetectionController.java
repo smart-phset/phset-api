@@ -27,8 +27,12 @@ public class AiDetectionController {
     public ResponseEntity<?> create(
             @RequestHeader(value = "X-SmartPhset-AI-Key", required = false) String supplied,
             @Valid @RequestBody AiDetectionRequest request) {
-        if (!key.isBlank() && (supplied == null || !MessageDigest.isEqual(
-                key.getBytes(StandardCharsets.UTF_8), supplied.getBytes(StandardCharsets.UTF_8)))) {
+        if (key.isBlank()) {
+            return ResponseEntity.status(503).body(Map.of(
+                    "error", "ingestion_unavailable", "message", "AI ingest key not configured"));
+        }
+        if (supplied == null || !MessageDigest.isEqual(
+                key.getBytes(StandardCharsets.UTF_8), supplied.getBytes(StandardCharsets.UTF_8))) {
             return ResponseEntity.status(401).body(Map.of(
                     "error", "unauthorized", "message", "Invalid AI ingest key"));
         }
