@@ -1,8 +1,9 @@
 # SmartPhset API · AWS release runbook
 
 Prepared from source and read-only EC2 inspection on 2026-10-28, completed locally
-2026-10-29 (Asia/Phnom_Penh). **No push, production replacement, Nginx reload or
-infrastructure change was performed.** Commands below are for a separately
+2026-10-29 (Asia/Phnom_Penh). **No production replacement, Nginx reload or infrastructure change was performed.**
+The code and Docker Hub v1.1.0 release are now published; see the
+[release record](releases/v1.1.0.md). Deployment commands below are for a separately
 approved release window. Do not run a second backend against production MQTT.
 
 ## Verified production baseline
@@ -61,20 +62,23 @@ The controller checks the dedicated camera key, with 401 for wrong/missing key,
 503 if unconfigured, 404 for unknown authorized source. No new CSRF exemption,
 JWT login implementation, MQTT behavior or database migration was added.
 
-## Candidate and local verification
+## Published v1.1.0 and local verification
 
-Built locally, not pushed:
+Published and verified on Docker Hub:
 
 ```text
-ratanaksaren/smartphset-api:1.1.0-camera.20261028.9134eca.dirty
-local manifest/image ID: sha256:8c4650666ceca505d21866d3d44489d4f0291333b2a7890a659ed9b843c9f514
+ratanaksaren/smartphset-api:1.1.0
+local manifest/image ID: sha256:fe886385ecc58e330a46f1321d6cc734111477bc69e0fe6de94343c27f866bf3
 ```
 
-The tag identifies the uncommitted camera work over HEAD `9134eca`; it is a review
-candidate, not a committed release. Never overwrite it. A final release from a
-reviewed commit should receive a new unique tag, with its own recorded digest.
-Registry availability/permissions have not been verified by pushing. A local
-RepoDigest is not evidence that the new image exists in Docker Hub.
+The release was rebuilt without cache from a clean Git archive of commit
+`9f9f3b52bbc593de5150119497c0dd91a3578d4c`, normally pushed to origin/main.
+The image has OCI source/revision/version labels, passed isolated smoke tests and
+was scanned for deployment secrets. Docker Hub's digest matches the audited image.
+Do not overwrite this tag. Use a new unique version for future builds.
+The earlier `.dirty` image remains a historical local candidate and was not used
+as the release source. Recovery and credential revocation evidence is summarized
+in the release record; no private credentials are committed.
 
 ```bash
 cd /home/ratanak/smart-phset/api
@@ -82,7 +86,7 @@ cd /home/ratanak/smart-phset/api
 # Use a NEW version tag if building again:
 bash scripts/release/build-candidate.sh ratanaksaren/smartphset-api:YOUR_UNIQUE_VERSION
 # The already built candidate can be retested without rebuilding:
-bash scripts/release/smoke-image.sh ratanaksaren/smartphset-api:1.1.0-camera.20261028.9134eca.dirty
+bash scripts/release/smoke-image.sh ratanaksaren/smartphset-api:1.1.0
 ```
 
 The Dockerfile builds bootJar in-container; host build is a separate gate.
@@ -95,15 +99,15 @@ broker commands were used. Physical hardware remains a manual acceptance item.
 
 ## Pre-deployment blockers
 
-1. Obtain explicit approval for pushing, production replacement and Nginx change.
-2. Review/commit the intended release in a later approved task; current work is dirty.
+1. Obtain explicit approval for production replacement and Nginx change. GitHub and image pushes are complete.
+2. Recheck the verified image digest and committed source revision before deployment. The release source was clean and pushed.
 3. Create a strong registry key privately and matching IDs on Spring/Python/Next.
    The registry accepts IDs/labels only. Python owns the private capture URLs.
 4. Current Nginx returns 403 on `/api/cameras`; old application loopback also returns
    403. Camera registry deployment has not occurred. Add only the reviewed routes below.
 5. Review any Neon migration history/backups in the approved release process.
    There is no new migration here. Startup still runs Flyway and validates schema.
-6. Verify registry push access and record the pushed digest. Pull by digest on EC2.
+6. The registry digest is verified below. Pull by digest on EC2; do not rebuild or retag it there.
 7. A remote Next container cannot reach the laptop's `127.0.0.1:8002`. Remote AI
    requires a separately deployed worker/private authenticated connection. Do not
    publish port 8002 or raw camera HTTP ports, or disable authentication.
@@ -113,18 +117,15 @@ broker commands were used. Physical hardware remains a manual acceptance item.
 9. Do not open application-public detection reads in Nginx without an authenticated
    read design. Keep the existing detection POST-only restriction.
 
-## Approved push and staging of release files (NOT executed)
+## Published image and approved staging of deployment files
 
-Use Docker Hub authentication through an interactive/credential-helper workflow;
-do not put a token into a shell command or README.
+Docker Hub publication is complete. The staging/SSH/deployment commands below
+have not been executed. Do not put registry tokens into shell commands or documentation.
 
 ```bash
 cd /home/ratanak/smart-phset/api
-candidate=ratanaksaren/smartphset-api:1.1.0-camera.20261028.9134eca.dirty
-docker login
-docker push "$candidate"
-# Record the actual registry digest shown by push and verify it:
-docker buildx imagetools inspect "$candidate"
+docker buildx imagetools inspect ratanaksaren/smartphset-api:1.1.0
+# Expected digest: sha256:fe886385ecc58e330a46f1321d6cc734111477bc69e0fe6de94343c27f866bf3
 # Only after approval, copy reviewed scripts (no private env files from Git):
 scp scripts/release/ec2-replace.sh scripts/release/expected-hostconfig.json DevOps:/home/ubuntu/
 ssh DevOps
@@ -162,7 +163,7 @@ Use the actual digest confirmed by the approved push, not an assumed remote tag:
 
 ```bash
 # On EC2; replace only after verifying the pushed digest:
-new_image=ratanaksaren/smartphset-api@sha256:REPLACE_WITH_VERIFIED_PUSH_DIGEST
+new_image=ratanaksaren/smartphset-api@sha256:fe886385ecc58e330a46f1321d6cc734111477bc69e0fe6de94343c27f866bf3
 docker pull "$new_image"
 sudo APPROVE_PRODUCTION_DEPLOY=yes bash /home/ubuntu/ec2-replace.sh \
   "$new_image" /opt/smartphset/camera.env

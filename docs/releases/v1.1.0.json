@@ -1,0 +1,28 @@
+{
+  "image_tag": "ratanaksaren/smartphset-api:1.1.0",
+  "published_digest": "sha256:fe886385ecc58e330a46f1321d6cc734111477bc69e0fe6de94343c27f866bf3",
+  "git_commit": "9f9f3b52bbc593de5150119497c0dd91a3578d4c",
+  "architecture": "linux/amd64",
+  "docker_hub_verified": true,
+  "remote_digest_matches_audited_local_image": true,
+  "docker_hub_url": "https://hub.docker.com/r/ratanaksaren/smartphset-api/tags?name=1.1.0",
+  "released_on": "2026-10-29",
+  "gradle_tests": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "development_password_rotated_and_old_rejected": true,
+  "development_data_fingerprints_preserved": true,
+  "local_application_database_authentication_verified": true,
+  "isolated_image_smoke_passed": true,
+  "image_security_audit": {
+    "layers": 8,
+    "files": 5094,
+    "deployment_secret_findings": 0,
+    "public_gnutls_selftest_vectors": 6,
+    "public_selftest_source": "https://github.com/gnutls/gnutls/blob/3.7.3/lib/crypto-selftests-pk.c"
+  },
+  "aws_deployed": false
+}

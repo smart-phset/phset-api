@@ -9,6 +9,8 @@ Production origin: **https://phset.api.ratanak.me**. Repository remote is
 `ratanaksaren/smartphset-api:1.0.0`; the new local camera registry is **not deployed**.
 Nginx currently denies registry routes. See [AWS release runbook](docs/aws-redeployment.md)
 for verified runtime settings, image comparison, blockers, deployment and rollback.
+The [v1.1.0 image release](docs/releases/v1.1.0.md) is published and verified; AWS
+still runs the existing deployment until a separately approved replacement.
 
 ## Architecture and dependencies
 
@@ -167,7 +169,7 @@ The Dockerfile rebuilds the JAR in a Java 25 builder, uses a non-root Java 25 JR
 health is verified externally with `/actuator/health`. It exposes container port
 9090; host publication must remain loopback only. See [AWS runbook](docs/aws-redeployment.md)
 for candidate build/tag/push, isolated image smoke testing, existing EC2 network,
-private env, Nginx and rollback. No deployment/push has been performed for this release.
+private env, Nginx and rollback. The v1.1.0 GitHub/image pushes are complete; no AWS deployment has been performed.
 
 ## Troubleshooting
 
