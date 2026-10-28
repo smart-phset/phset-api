@@ -56,6 +56,11 @@ management:
 
 app:
 
+  # IDs/labels only. Capture addresses stay on the AI host.
+  camera:
+    registry: ${SMARTPHSET_CAMERA_REGISTRY:}
+    api-key: ${SMARTPHSET_CAMERA_API_KEY:}
+
   mqtt:
     enabled: ${MQTT_ENABLED:true}
     client-id: ${MQTT_CLIENT_ID:smartphset-api}

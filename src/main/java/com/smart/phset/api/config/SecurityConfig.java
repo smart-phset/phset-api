@@ -18,6 +18,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers("/actuator", "/actuator/**").denyAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cameras", "/api/cameras/*/availability").permitAll()
                         .requestMatchers("/api/ai/detections", "/api/ai/detections/latest").permitAll()
                         .requestMatchers("/api/iot/devices/*/state", "/api/iot/devices/*/actuators/*").permitAll()
                         .anyRequest().authenticated())

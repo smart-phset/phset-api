@@ -1,0 +1,12 @@
+{
+  "deployed_jar_sha256": "8ca273a2855c2dc718be7ba7797f65785e98614e21354bf794de87b85c6870f7",
+  "local_jar_sha256": "4d4b62f65f3b10efe53ac8f70ea383de5fc11a2cfb65baee38e7750a4a2d18e6",
+  "added": [
+    "com/smart/phset/api/feature/camera/CameraController.class"
+  ],
+  "removed": [],
+  "changed": [
+    "application.yaml",
+    "com/smart/phset/api/config/SecurityConfig.class"
+  ]
+}
